@@ -62,8 +62,10 @@ const setAppDelegate = config =>
           0,
           didFinishLaunchingWithOptionsStartIndex
         ) +
-        `  // JPush初始化配置
-  [JPUSHService setupWithOption:launchOptions appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" apsForProduction:YES]
+        `
+  // JPush 初始化配置，可以延时初始化 不再强制在此初始化，在 js 里可以直接调用 init
+  // [JPUSHService setupWithOption:launchOptions appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" apsForProduction:YES]
+
   // APNS
   JPUSHRegisterEntity * entity = [[JPUSHRegisterEntity alloc] init]
   if (@available(iOS 12.0, *)) {
@@ -71,14 +73,17 @@ const setAppDelegate = config =>
   }
   [JPUSHService registerForRemoteNotificationConfig:entity delegate:self]
   [launchOptions objectForKey: UIApplicationLaunchOptionsRemoteNotificationKey]
+
   // 自定义消息
   NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter]
   [defaultCenter addObserver:self selector:@selector(networkDidReceiveMessage:) name:kJPFNetworkDidReceiveMessageNotification object:nil]
+
   // 地理围栏
   [JPUSHService registerLbsGeofenceDelegate:self withLaunchOptions:launchOptions]
-#if defined(FB_SONARKIT_ENABLED) && __has_include(<FlipperKit/FlipperClient.h>)
-  InitializeFlipper(application)
-#endif
+
+  #if defined(FB_SONARKIT_ENABLED) && __has_include(<FlipperKit/FlipperClient.h>)
+    InitializeFlipper(application)
+  #endif
 ` +
         config.modResults.contents.slice(
           didFinishLaunchingWithOptionsStartIndex
