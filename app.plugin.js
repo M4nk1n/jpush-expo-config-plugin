@@ -1,26 +1,56 @@
+const fs = require('fs')
 const {
+  IOSConfig,
   AndroidConfig,
   withAppBuildGradle,
   withSettingsGradle,
   withAndroidManifest,
   withAppDelegate,
+  withMod,
+  BaseMods,
 } = require('@expo/config-plugins')
 
 let JPUSH_APPKEY = 'appKey',
   JPUSH_CHANNEL = 'channel'
 
-const withJPush = (config, props) => {
-  if (!props || !props.appKey || !props.channel) {
-    throw new Error('[JPushExpoConfigPlugin] 请传入参数 appKey & channel')
+const setAppDelegateHeader = config => BaseMods.withIosBaseMods(config, {
+  skipEmptyMod: false,
+  providers: {
+    appDelegateHeader: BaseMods.provider({
+      getFilePath({ modRequest: { projectRoot } }) {
+        console.log("[JPushExpoConfigPlugin] 配置 AppDelegate Header")
+        const filePath = IOSConfig.Paths.getAppDelegateFilePath(projectRoot)
+        // Replace the .mm with a .h
+        const [lastfix] = filePath.split('.').slice(-1)
+        if (lastfix.endsWith('m')) {
+          const fileStrArray = filePath.split('.')
+          return [...filePath.split('.').slice(0, fileStrArray.length - 1), 'h'].join('.')
+        }
+        // Possibly a Swift project...
+        throw new Error(`Could not locate a valid AppDelegate.h at root: "${projectRoot}"`)
+      },
+      // Read the input file from the filesystem.
+      async read(filePath) {
+        return IOSConfig.Paths.getFileInfo(filePath)
+      },
+      // Write the resulting output to the filesystem.
+      async write(filePath, { modResults: { contents } }) {
+        let newContents = contents
+        if (contents.indexOf('#import <RCTJPushModule.h>') === -1) {
+          newContents = `#import <RCTJPushModule.h>\n` + contents
+        }
+        const reg = /\@interface\ AppDelegate\ \: EXAppDelegateWrapper\ \<(.*?)\>/
+        const [str] = newContents.match(reg)
+        if (str.indexOf('JPUSHRegisterDelegate') === -1 && str.indexOf('JPUSHGeofenceDelegate') === -1) {
+          const { index } = newContents.match(reg)
+          const startIndex = index + str.length - 1
+          newContents = newContents.slice(0, startIndex) + `, JPUSHRegisterDelegate, JPUSHGeofenceDelegate` + newContents.slice(startIndex)
+        }
+        await fs.promises.writeFile(filePath, newContents)
+      },
+    })
   }
-  JPUSH_APPKEY = props.appKey
-  JPUSH_CHANNEL = props.channel
-  config = setAppDelegate(config)
-  config = setAndroidManifest(config)
-  config = setAppBuildGradle(config)
-  config = setSettingsGradle(config)
-  return config
-}
+})
 
 // 配置 iOS AppDelegate
 const setAppDelegate = config =>
@@ -28,14 +58,15 @@ const setAppDelegate = config =>
     if (
       config.modResults.contents.indexOf('#import <UserNotifications/UserNotifications.h>') === -1
     ) {
-      console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate import ... ')
-      config.modResults.contents =
-        `
-#ifdef NSFoundationVersionNumber_iOS_9_x_Max
+      console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate import(UserNotifications) ... ')
+      config.modResults.contents = config.modResults.contents.replace(
+        "@implementation AppDelegate",
+        `#ifdef NSFoundationVersionNumber_iOS_9_x_Max
 #import <UserNotifications/UserNotifications.h>
 #endif
 
-` + config.modResults.contents
+@implementation AppDelegate`
+      )
     }
 
     if (
@@ -97,6 +128,7 @@ const setAppDelegate = config =>
         `appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" `
       )
     }
+
     if (config.modResults.contents.indexOf('return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];') > -1) {
       config.modResults.contents = config.modResults.contents.replace('return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];', '[JPUSHService registerDeviceToken:deviceToken];')
     }
@@ -330,30 +362,43 @@ const setAppBuildGradle = config =>
   })
 
 // 配置 Android settings.gradle
-const setSettingsGradle = config =>
-  withSettingsGradle(config, config => {
-    if (
-      config.modResults.contents.indexOf(`include ':jpush-react-native'`) === -1
-    ) {
-      console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jpush-react-native ... ')
-      config.modResults.contents =
-        config.modResults.contents +
-        `
+const setSettingsGradle = config => withSettingsGradle(config, config => {
+  if (
+    config.modResults.contents.indexOf(`include ':jpush-react-native'`) === -1
+  ) {
+    console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jpush-react-native ... ')
+    config.modResults.contents =
+      config.modResults.contents +
+      `
 include ':jpush-react-native'
 project(':jpush-react-native').projectDir = new File(["node", "--print", "require.resolve('jpush-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")`
-    }
-    if (
-      config.modResults.contents.indexOf(`include ':jcore-react-native'`) === -1
-    ) {
-      console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jcore-react-native ... ')
-      config.modResults.contents =
-        config.modResults.contents +
-        `
+  }
+  if (
+    config.modResults.contents.indexOf(`include ':jcore-react-native'`) === -1
+  ) {
+    console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jcore-react-native ... ')
+    config.modResults.contents =
+      config.modResults.contents +
+      `
 include ':jcore-react-native'
 project(':jcore-react-native').projectDir = new File(["node", "--print", "require.resolve('jcore-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")`
-    }
+  }
 
-    return config
-  })
+  return config
+})
+
+const withJPush = (config, props) => {
+  if (!props || !props.appKey || !props.channel) {
+    throw new Error('[JPushExpoConfigPlugin] 请传入参数 appKey & channel')
+  }
+  JPUSH_APPKEY = props.appKey
+  JPUSH_CHANNEL = props.channel
+  config = setAppDelegateHeader(config)
+  config = setAppDelegate(config)
+  config = setAndroidManifest(config)
+  config = setAppBuildGradle(config)
+  config = setSettingsGradle(config)
+  return config
+}
 
 module.exports = withJPush

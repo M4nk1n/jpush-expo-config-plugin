@@ -10,7 +10,6 @@
   "keywords": ["expo", "react-native", "jpush", "config"],
   "files": [
     "index.js",
-    "app.config.js",
     "app.plugin.js"
   ],
   "author": {
