@@ -271,7 +271,10 @@ const setAndroidManifest = config => withAndroidManifest(config, config => {
   return config
 })
 
-// 配置 Android build.gradle
+/**
+ * 配置 Android build.gradle
+ * 貌似现在可以自动配置 settings.gradle 了，暂时去掉，如果有问题再加回来
+ */
 const setAppBuildGradle = config => withAppBuildGradle(config, config => {
   const defaultConfig = config.modResults.contents.match(
     /defaultConfig([\s\S]*)versionName(.*)\n/
@@ -301,51 +304,56 @@ const setAppBuildGradle = config => withAppBuildGradle(config, config => {
   } else {
     throw new Error('[JPushExpoConfigPlugin] 无法完成 build.gradle - defaultConfig 配置')
   }
-  const dependencies = config.modResults.contents.match(/dependencies {\n/)
-  if (dependencies) {
-    const [startString] = dependencies
-    const startStringLength = startString.length
-    const startStringIndex = config.modResults.contents.indexOf(startString) + startStringLength
 
-    if (config.modResults.contents.indexOf(`implementation project(':jpush-react-native')`) === -1) {
-      console.log('\n[JPushExpoConfigPlugin] 配置 build.gradle dependencies jpush-react-native ... ')
-      config.modResults.contents = config.modResults.contents.slice(0, startStringIndex)
-        + `    implementation project(':jpush-react-native')\n`
-        + config.modResults.contents.slice(startStringIndex)
-    }
+  // 貌似现在可以自动处理 implementation 了，暂时去掉，如果有问题再加回来
+  // const dependencies = config.modResults.contents.match(/dependencies {\n/)
+  // if (dependencies) {
+  //   const [startString] = dependencies
+  //   const startStringLength = startString.length
+  //   const startStringIndex = config.modResults.contents.indexOf(startString) + startStringLength
 
-    if (config.modResults.contents.indexOf(`implementation project(':jcore-react-native')`) === -1) {
-      console.log('\n[JPushExpoConfigPlugin] 配置 build.gradle dependencies jcore-react-native ... ')
-      config.modResults.contents = config.modResults.contents.slice(0, startStringIndex)
-        + `    implementation project(':jcore-react-native')\n`
-        + config.modResults.contents.slice(startStringIndex)
-    }
-  } else {
-    throw new Error('[JPushExpoConfigPlugin] 无法完成 build.gradle dependencies 配置')
-  }
+  //   if (config.modResults.contents.indexOf(`implementation project(':jpush-react-native')`) === -1) {
+  //     console.log('\n[JPushExpoConfigPlugin] 配置 build.gradle dependencies jpush-react-native ... ')
+  //     config.modResults.contents = config.modResults.contents.slice(0, startStringIndex)
+  //       + `    implementation project(':jpush-react-native')\n`
+  //       + config.modResults.contents.slice(startStringIndex)
+  //   }
+
+  //   if (config.modResults.contents.indexOf(`implementation project(':jcore-react-native')`) === -1) {
+  //     console.log('\n[JPushExpoConfigPlugin] 配置 build.gradle dependencies jcore-react-native ... ')
+  //     config.modResults.contents = config.modResults.contents.slice(0, startStringIndex)
+  //       + `    implementation project(':jcore-react-native')\n`
+  //       + config.modResults.contents.slice(startStringIndex)
+  //   }
+  // } else {
+  //   throw new Error('[JPushExpoConfigPlugin] 无法完成 build.gradle dependencies 配置')
+  // }
 
   return config
 })
 
-// 配置 Android settings.gradle
+/**
+ * 配置 Android settings.gradle
+ * 貌似现在可以自动配置 settings.gradle 了，暂时去掉，如果有问题再加回来
+ */
 const setSettingsGradle = config => withSettingsGradle(config, config => {
-  if (config.modResults.contents.indexOf(`include ':jcore-react-native'`) === -1) {
-    console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jcore-react-native ... ')
-    config.modResults.contents = config.modResults.contents
-      + `
-include ':jcore-react-native'
-project(':jcore-react-native').projectDir = new File(["node", "--print", "require.resolve('jcore-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")
-`
-  }
+//   if (config.modResults.contents.indexOf(`include ':jcore-react-native'`) === -1) {
+//     console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jcore-react-native ... ')
+//     config.modResults.contents = config.modResults.contents
+//       + `
+// include ':jcore-react-native'
+// project(':jcore-react-native').projectDir = new File(["node", "--print", "require.resolve('jcore-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")
+// `
+//   }
 
-  if (config.modResults.contents.indexOf(`include ':jpush-react-native'`) === -1) {
-    console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jpush-react-native ... ')
-    config.modResults.contents = config.modResults.contents
-      + `
-include ':jpush-react-native'
-project(':jpush-react-native').projectDir = new File(["node", "--print", "require.resolve('jpush-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")
-`
-  }
+//   if (config.modResults.contents.indexOf(`include ':jpush-react-native'`) === -1) {
+//     console.log('\n[JPushExpoConfigPlugin] 配置 settings.gradle include jpush-react-native ... ')
+//     config.modResults.contents = config.modResults.contents
+//       + `
+// include ':jpush-react-native'
+// project(':jpush-react-native').projectDir = new File(["node", "--print", "require.resolve('jpush-react-native/package.json')"].execute(null, rootDir).text.trim(), "../android")
+// `
+//   }
 
   return config
 })
