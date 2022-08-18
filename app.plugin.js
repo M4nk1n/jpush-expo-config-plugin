@@ -65,51 +65,51 @@ const setAppDelegate = config => withAppDelegate(config, config => {
     )
   }
 
-  if (config.modResults.contents.indexOf('JPUSHService setupWithOption:launchOptions') === -1) {
-    console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate didFinishLaunchingWithOptions ... ')
-    const didFinishLaunchingWithOptionsResult =
-      config.modResults.contents.match(
-        /didFinishLaunchingWithOptions([\s\S]*)launchOptions\n\{\n/
-      )
-    const [didFinishLaunchingWithOptions] =
-      didFinishLaunchingWithOptionsResult
-    const didFinishLaunchingWithOptionsIndex =
-      didFinishLaunchingWithOptionsResult.index
-    const didFinishLaunchingWithOptionsStartIndex =
-      didFinishLaunchingWithOptionsIndex
-      + didFinishLaunchingWithOptions.length
-    config.modResults.contents =
-      config.modResults.contents.slice(0, didFinishLaunchingWithOptionsStartIndex)
-      + `
-  // JPush 初始化配置，可以延时初始化 不再强制在此初始化，在 js 里可以直接调用 init
-  // [JPUSHService setupWithOption:launchOptions appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" apsForProduction:YES];
+//   if (config.modResults.contents.indexOf('JPUSHService setupWithOption:launchOptions') === -1) {
+//     console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate didFinishLaunchingWithOptions ... ')
+//     const didFinishLaunchingWithOptionsResult =
+//       config.modResults.contents.match(
+//         /didFinishLaunchingWithOptions([\s\S]*)launchOptions\n\{\n/
+//       )
+//     const [didFinishLaunchingWithOptions] =
+//       didFinishLaunchingWithOptionsResult
+//     const didFinishLaunchingWithOptionsIndex =
+//       didFinishLaunchingWithOptionsResult.index
+//     const didFinishLaunchingWithOptionsStartIndex =
+//       didFinishLaunchingWithOptionsIndex
+//       + didFinishLaunchingWithOptions.length
+//     config.modResults.contents =
+//       config.modResults.contents.slice(0, didFinishLaunchingWithOptionsStartIndex)
+//       + `
+//   // JPush 初始化配置，可以延时初始化 不再强制在此初始化，在 js 里可以直接调用 init
+//   // [JPUSHService setupWithOption:launchOptions appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" apsForProduction:YES];
 
-  // APNS
-  JPUSHRegisterEntity * entity = [[JPUSHRegisterEntity alloc] init];
-  if (@available(iOS 12.0, *)) {
-    entity.types = JPAuthorizationOptionAlert|JPAuthorizationOptionBadge|JPAuthorizationOptionSound|JPAuthorizationOptionProvidesAppNotificationSettings;
-  }
-  [JPUSHService registerForRemoteNotificationConfig:entity delegate:self];
-  [launchOptions objectForKey: UIApplicationLaunchOptionsRemoteNotificationKey];
+//   // APNS
+//   JPUSHRegisterEntity * entity = [[JPUSHRegisterEntity alloc] init];
+//   if (@available(iOS 12.0, *)) {
+//     entity.types = JPAuthorizationOptionAlert|JPAuthorizationOptionBadge|JPAuthorizationOptionSound|JPAuthorizationOptionProvidesAppNotificationSettings;
+//   }
+//   [JPUSHService registerForRemoteNotificationConfig:entity delegate:self];
+//   [launchOptions objectForKey: UIApplicationLaunchOptionsRemoteNotificationKey];
 
-  // 自定义消息
-  NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
-  [defaultCenter addObserver:self selector:@selector(networkDidReceiveMessage:) name:kJPFNetworkDidReceiveMessageNotification object:nil];
+//   // 自定义消息
+//   NSNotificationCenter *defaultCenter = [NSNotificationCenter defaultCenter];
+//   [defaultCenter addObserver:self selector:@selector(networkDidReceiveMessage:) name:kJPFNetworkDidReceiveMessageNotification object:nil];
 
-  // 地理围栏
-  [JPUSHService registerLbsGeofenceDelegate:self withLaunchOptions:launchOptions];
+//   // 地理围栏
+//   [JPUSHService registerLbsGeofenceDelegate:self withLaunchOptions:launchOptions];
 
-  #if defined(FB_SONARKIT_ENABLED) && __has_include(<FlipperKit/FlipperClient.h>)
-    InitializeFlipper(application);
-  #endif
-` + config.modResults.contents.slice(didFinishLaunchingWithOptionsStartIndex)
-  } else {
-    console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate appKey & channel ... ')
-    config.modResults.contents = config.modResults.contents.replace(
-      /appKey\:\@\"(.*)\" channel\:\@\"(.*)\" /,
-      `appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" `
-    )
-  }
+//   #if defined(FB_SONARKIT_ENABLED) && __has_include(<FlipperKit/FlipperClient.h>)
+//     InitializeFlipper(application);
+//   #endif
+// ` + config.modResults.contents.slice(didFinishLaunchingWithOptionsStartIndex)
+//   } else {
+//     console.log('\n[JPushExpoConfigPlugin] 配置 AppDelegate appKey & channel ... ')
+//     config.modResults.contents = config.modResults.contents.replace(
+//       /appKey\:\@\"(.*)\" channel\:\@\"(.*)\" /,
+//       `appKey:@"${JPUSH_APPKEY}" channel:@"${JPUSH_CHANNEL}" `
+//     )
+//   }
 
   if (config.modResults.contents.indexOf(
     'return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];'
