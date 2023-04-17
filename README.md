@@ -1,6 +1,6 @@
 # jpush-expo-config-plugin
 
-Deprecated. Followed by [expo-config-plugin/expo-config-plugin-jpush](https://github.com/M4nk1n/expo-config-plugin/tree/main/packages/expo-config-plugin-jpush).
+Deprecated. Followed by [expo-modules/mods/expo-mods-jpush](https://github.com/M4nk1n/expo-modules/tree/main/mods/expo-mods-jpush).
 
 ---
 
